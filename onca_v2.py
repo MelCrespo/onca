@@ -54,7 +54,7 @@ for l in np.arange(arr_l) + 1:
                 if sex_id == 3:
                     df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
                 else:
-                    df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
+                    df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations[conapo_populations.SEXO == sex_id], ['ANIO_REGIS', 'RANGO_EDAD'])
                 
                 pg.create_lineplot(
                     data=df,

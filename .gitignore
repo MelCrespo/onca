@@ -2,3 +2,5 @@ DATOS_CRUDOS
 requirements
 __pycache__
 ???_outputs
+.gitignore
+onca_v2_paper.ipynb
