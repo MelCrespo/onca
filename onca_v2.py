@@ -2,8 +2,10 @@ import pandas as pd
 import onca_utils as ou
 import os
 import onca_products as op
-import importlib
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures as ft
+import time
 
 # I/O paths
 input_conapo_poblaciones = "./requirements/poblaciones_group_quinq.csv"
@@ -12,6 +14,7 @@ input_cat_entidades = "./requirements/entidades_fed.csv"
 input_cat_municipios = "./requirements/municipios_geo.csv"
 input_cat_edades = "./requirements/EDADES.csv"
 input_mortality_folder = "./DATOS_CRUDOS/"
+input_estados_geojson = "./requirements/estados.geojson"
 cie10 = "C16"
 
 output_path = f'{cie10}_outputs'
@@ -42,46 +45,48 @@ age_groups = np.array(['00_04', '05_09', '10_14', '15_19', '20_24', '25_29', '30
        '70_74', '75_79', '80_84', '>85'])
 arr_l = age_groups.shape[0]
 
-#----------------LINEPLOTS----------------#
-# print("Generando lineplots")
-# counter = 1
-# for l in np.arange(arr_l) + 1:   
-#     for i in np.arange(arr_l-l+1):
-#         filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups[i:i+l])].copy()
+init_time = time.time()
 
-#         for sex_id, sex in zip([1,2,3], ["Hombres","Mujeres","ambos sexos"]):
-#             for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
-#                 # print(sex_id, sex, tasa, escala)
-#                 if sex_id == 3:
-#                     df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
-#                 else:
-#                     df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations[conapo_populations.SEXO == sex_id], ['ANIO_REGIS', 'RANGO_EDAD'])
+#----------------LINEPLOTS----------------#
+print("Generando lineplots")
+counter = 1
+for l in np.arange(arr_l) + 1:   
+    for i in np.arange(arr_l-l+1):
+        filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups[i:i+l])].copy()
+
+        for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
+            for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
+                # print(sex_id, sex, tasa, escala)
+                if sex_id == 3:
+                    df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
+                else:
+                    df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations[conapo_populations.SEXO == sex_id], ['ANIO_REGIS', 'RANGO_EDAD'])
                 
-#                 pg.create_lineplot(
-#                     data=df,
-#                     x='ANIO_REGIS',
-#                     y=tasa,
-#                     color='RANGO_EDAD',
-#                     output_path=output_path,
-#                     cie10=cie10,
-#                     place='Mexico',
-#                     scale=escala,
-#                     hover_data= [tasa],
-#                     cve_geo='00',
-#                     sex=sex,
-#                 )
-#                 print(f"Lineplot {counter}", end="\r")
-#                 counter+=1
+                pg.create_lineplot(
+                    data=df,
+                    x='ANIO_REGIS',
+                    y=tasa,
+                    color='RANGO_EDAD',
+                    output_path=output_path,
+                    cie10=cie10,
+                    place='Mexico',
+                    scale=escala,
+                    hover_data= [tasa],
+                    cve_geo='00',
+                    sex=sex,
+                )
+                print(f"Lineplot {counter}", end="\r")
+                counter+=1
 
 #-----------MAPAS ESTATALES---------------#
-print("Generando mapas estatales")
-counter = 1
+print("\nGenerando mapas estatales")
+counter = 0
 for l in np.arange(arr_l) + 1:   
     for i in np.arange(arr_l-l+1):
         age_groups_range = age_groups[i:i+l]
         filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups_range)].copy()
 
-        for sex_id, sex in zip([1,2,3], ["Hombres","Mujeres","ambos sexos"]):
+        for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
             # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
             tasa = "TASA_CRUDA_100K"
             escala = "100,000"
@@ -90,33 +95,50 @@ for l in np.arange(arr_l) + 1:
             if sex_id == 3:
                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'RANGO_EDAD'])
                 
-                states = who.compute_ASR(df=df[['ANIO_REGIS', 'ENT_CVE', 'RANGO_EDAD','TASA_CRUDA_100K']],
+                df = who.compute_ASR(df=df[['ANIO_REGIS', 'ENT_CVE', 'RANGO_EDAD','TASA_CRUDA_100K']],
                     age_column="RANGO_EDAD",
                     rate_column="TASA_CRUDA_100K",
                     scale="100K")
                 
             else:
-                continue
-                df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations[conapo_populations.SEXO == sex_id], ['ANIO_REGIS', 'RANGO_EDAD'])
-                states = who.compute_ASR(df=df[['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD','TASA_CRUDA_100K']],
+                df = mc.compute_raw_mortality_rate(filtered_deaths[filtered_deaths.SEXO == sex_id], conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD'])
+                
+                df = who.compute_ASR(df=df[['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD','TASA_CRUDA_100K']],
                     age_column="RANGO_EDAD",
                     rate_column="TASA_CRUDA_100K",
                     scale="100K")
 
+            ######
+            df = df.merge(cat_entidades, on="ENT_CVE")
+            df = df.astype({'ENT_CVE':str})
+            df['ENT_CVE'] = df.ENT_CVE.str.zfill(2)
+            ages = f"{age_groups_range[0].split("_")[0]}-{age_groups_range[-1].split("_")[-1]}"
+            ######
 
-            # pg.create_lineplot(
-            #     data=df,
-            #     x='ANIO_REGIS',
-            #     y=tasa,
-            #     color='RANGO_EDAD',
-            #     output_path=output_path,
-            #     cie10=cie10,
-            #     place='Mexico',
-            #     scale=escala,
-            #     hover_data= [tasa],
-            #     cve_geo='00',
-            #     sex=sex,
-            # )
+            with ThreadPoolExecutor(max_workers=24) as executor:
+                futures = list()
+                for year in df.ANIO_REGIS.unique():
+                    counter+=1
+                    futures.append(executor.submit(pg.create_state_map,
+                        data=df.query(f"ANIO_REGIS == {year}"),
+                        geojson_file_path="./requirements/estados.geojson",
+                        x='ENT_CVE',
+                        y='ASR(WHO)_100K',
+                        output_path=output_path,
+                        cie10=cie10,
+                        place='Mexico',
+                        rate='ASR(WHO)',
+                        scale='100,000',
+                        hover_data=['ASR(WHO)_100K', 'ENT_NOMBRE'],
+                        labels={'ASR(WHO)_100K':'ASR(WHO)', 'ENT_NOMBRE':'State'},
+                        cve_geo='00',
+                        sex=sex,
+                        ages=ages,
+                        year=year))
+
+                    # for future in ft.as_completed(futures):
+                    #     print(f"State map {counter}", end="\r")
+                    #     counter+=1
             print(f"State map {counter}", end="\r")
-            counter+=1
-print("\nProductos terminados")
+                        
+print(f"\nProductos terminados en {round((time.time()-init_time)/60,2)} minutos")

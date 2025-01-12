@@ -27,7 +27,7 @@ class MortalityStandardizer:
         df[asr_name] = df[rate_column] * df["W"]
         df = df.drop(columns=[age_column, rate_column,"W"])
         group_columns = df.columns.drop(asr_name).to_list()
-        df = df.groupby(group_columns).agg({asr_name:sum}).reset_index()
+        df = df.groupby(group_columns).agg({asr_name:"sum"}).reset_index()
         return df
 
 class MortalityCalculator:

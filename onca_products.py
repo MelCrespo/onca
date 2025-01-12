@@ -77,8 +77,7 @@ class ProductGenerator:
                                 opacity=0.5,
                                 title=fig_title)
         
-        file_name = f"states_map_{cie10}_" + f"{year}_" + f"{cve_geo}_" + \
-            sex.replace(" ","") + "_" + y.lower().replace('_', '')
+        file_name = f"states_map_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + y.lower().replace('_', '')
         fig.write_html(output_path + "/" + file_name + ".html")
         data[hover_data].to_csv(output_path + "/" + file_name + ".csv", index=False)
         self.__write_metadata(
