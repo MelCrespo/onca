@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import json
+import janitor
 
 class ProductGenerator:
     def create_lineplot(self, data: pd.DataFrame, x: str, y: str, color: str, output_path: str,
@@ -134,6 +135,35 @@ class ProductGenerator:
                         x_axis=x,
                         y_axis=y)
 
+    def create_age_state_heatmap(self, data: pd.DataFrame, x: str, y: str, z: str, output_path: str,
+                        cie10: str, place: str, rate: str, scale: str, hover_data: list, labels: dict,
+                        cve_geo: str, sex: str, ages: str, year: str) -> None:
+        
+        ######## hacer esto fuera de la funcion
+        df_cancer_c = estados.complete("ENT_NOMBRE","RANGO_EDAD").fillna(0, downcast='infer')
+        df_cancer_c = df_cancer_c.sort_values(by=["TASA_EST_2_1_100k"], ascending=False)
+        ########
+
+        fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+
+        fig = px.density_heatmap(data.round(2), 
+                                x=x, 
+                                y=y, 
+                                z=z,
+                                width=1080, 
+                                height=480,
+                                text_auto=True
+                                )
+        fig.update_layout(
+            title=fig_title,
+            yaxis_title="Age",
+            xaxis_title="State"
+        )
+        fig.update_yaxes(autorange="reversed")
+        fig.update_layout(coloraxis_colorbar_title_text = 'SMR')
+        fig.write_image("outputs/heatmap_tasas_estandarizadas_2022.pdf")
+        fig.show()
+
     def __write_metadata(self,
                         name='Default',
                         description=None,
@@ -167,14 +197,12 @@ class ProductGenerator:
                 "temporal": temporal
             },
             "plot_desc": {
-                "PlotDescriptionDTO": {
-                    "function_id": function_id,
-                    "hue": hue,
-                    "title": title,
-                    "x_axis": x_axis,
-                    "y_axis": y_axis,
-                    "z_axis": z_axis
-                }
+                "function_id": function_id,
+                "hue": hue,
+                "title": title,
+                "x_axis": x_axis,
+                "y_axis": y_axis,
+                "z_axis": z_axis
             }
         }
 
