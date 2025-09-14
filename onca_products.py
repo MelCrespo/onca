@@ -135,14 +135,9 @@ class ProductGenerator:
                         x_axis=x,
                         y_axis=y)
 
-    def create_age_state_heatmap(self, data: pd.DataFrame, x: str, y: str, z: str, output_path: str,
-                        cie10: str, place: str, rate: str, scale: str, hover_data: list, labels: dict,
+    def create_age_specific_heatmap(self, data: pd.DataFrame, x: str, y: str, z: str, output_path: str,
+                        cie10: str, place: str, rate: str, scale: str, labels: dict,
                         cve_geo: str, sex: str, ages: str, year: str) -> None:
-        
-        ######## hacer esto fuera de la funcion
-        df_cancer_c = estados.complete("ENT_NOMBRE","RANGO_EDAD").fillna(0, downcast='infer')
-        df_cancer_c = df_cancer_c.sort_values(by=["TASA_EST_2_1_100k"], ascending=False)
-        ########
 
         fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
 
@@ -152,17 +147,35 @@ class ProductGenerator:
                                 z=z,
                                 width=1080, 
                                 height=480,
-                                text_auto=True
+                                text_auto=True,
+                                color_continuous_scale="Plasma_r",
+                                labels=labels
                                 )
         fig.update_layout(
             title=fig_title,
             yaxis_title="Age",
-            xaxis_title="State"
+            xaxis_title="State",
+            coloraxis_colorbar_title_text = rate
         )
         fig.update_yaxes(autorange="reversed")
-        fig.update_layout(coloraxis_colorbar_title_text = 'SMR')
-        fig.write_image("outputs/heatmap_tasas_estandarizadas_2022.pdf")
-        fig.show()
+        file_name = f"age_specific_heatmap_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + z.lower().replace('_', '')
+        fig.write_html(output_path + "/" + file_name + ".html")
+        data.to_csv(output_path + "/" + file_name + ".csv", index=False)
+        self.__write_metadata(
+                        name=output_path + "/" + file_name,
+                        description="Mapa de calor con tasas de mortalidad especificas por edad.",
+                        data_view_id=file_name + ".csv",
+                        interest_var=f"CauseOfDeath({cie10}), Sex({sex.split(' ')[0]}), Age([{ages}])",
+                        observable_var=f"MortalityRate({y})",
+                        info=f"CauseOfDeath({cie10}),Year({year}),Space({place}),Sex({sex.split(' ')[0]}),Age([{ages}]),MortalityRate({y})",
+                        product_type="Heatmap",
+                        space=self.__get_space_string(cve_geo),
+                        temporal=f"Year({year})",    
+                        function_id="plotly.express.density_heatmap",
+                        title=fig_title,
+                        x_axis=x,
+                        y_axis=y,
+                        z_axis=z)
 
     def __write_metadata(self,
                         name='Default',
