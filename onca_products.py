@@ -166,8 +166,8 @@ class ProductGenerator:
                         description="Mapa de calor con tasas de mortalidad especificas por edad.",
                         data_view_id=file_name + ".csv",
                         interest_var=f"CauseOfDeath({cie10}), Sex({sex.split(' ')[0]}), Age([{ages}])",
-                        observable_var=f"MortalityRate({y})",
-                        info=f"CauseOfDeath({cie10}),Year({year}),Space({place}),Sex({sex.split(' ')[0]}),Age([{ages}]),MortalityRate({y})",
+                        observable_var=f"MortalityRate({z})",
+                        info=f"CauseOfDeath({cie10}),Year({year}),Space({place}),Sex({sex.split(' ')[0]}),Age([{ages}]),MortalityRate({z})",
                         product_type="Heatmap",
                         space=self.__get_space_string(cve_geo),
                         temporal=f"Year({year})",    
@@ -176,6 +176,45 @@ class ProductGenerator:
                         x_axis=x,
                         y_axis=y,
                         z_axis=z)
+        
+    def create_boxplot(self, data: pd.DataFrame, x: str, y: str, color: str, hover_data: list, output_path: str,
+                        cie10: str, place: str, rate: str, scale: str, labels: dict,
+                        cve_geo: str, sex: str, ages: str, year: str) -> None:
+
+        fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+
+        fig = px.box(data,
+             x=x,
+             y=y,
+             color=color,
+             hover_data=hover_data,
+             labels=labels,
+             width=1080,
+             height=720)
+        fig.update_traces(quartilemethod='exclusive')
+        fig.update_layout(
+            title=fig_title,
+            yaxis_title=f"{rate} per {scale} inhabitants",
+            xaxis_title="Age"
+        )
+        
+        file_name = f"age_specific_boxplot_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + y.lower().replace('_', '')
+        fig.write_html(output_path + "/" + file_name + ".html")
+        data.to_csv(output_path + "/" + file_name + ".csv", index=False)
+        self.__write_metadata(
+                        name=output_path + "/" + file_name,
+                        description="Boxplot con tasas de mortalidad especificas por edad.",
+                        data_view_id=file_name + ".csv",
+                        interest_var=f"CauseOfDeath({cie10}), Sex({sex.split(' ')[0]}), Age([{ages}])",
+                        observable_var=f"MortalityRate({y})",
+                        info=f"CauseOfDeath({cie10}),Year({year}),Space({place}),Sex({sex.split(' ')[0]}),Age([{ages}]),MortalityRate({y})",
+                        product_type="Boxplot",
+                        space=self.__get_space_string(cve_geo),
+                        temporal=f"Year({year})",    
+                        function_id="plotly.express.box",
+                        title=fig_title,
+                        x_axis=x,
+                        y_axis=y)
 
     def __write_metadata(self,
                         name='Default',
