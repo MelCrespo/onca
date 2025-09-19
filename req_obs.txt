@@ -1,0 +1,12 @@
+pymongo
+nanoid
+option
+python-dotenv
+requests
+retry
+httpx
+--extra-index-url https://test.pypi.org/simple/
+goca
+mictlanx
+xolo
+kaleido

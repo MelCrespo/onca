@@ -8,6 +8,17 @@ import concurrent.futures as ft
 import time
 import janitor
 import sys
+# Dependencias de MictlanX
+from mictlanx.logger.log import Log
+from mictlanx.v4.client import Client
+from mictlanx.utils.index import Utils
+from mictlanx.v4.interfaces.responses import PutResponse
+from concurrent.futures import as_completed
+from option import Result,Ok,Err
+from typing import List,Dict,Any,Awaitable
+from client import OCAClient,Product,Level
+from nanoid import generate as nanoid
+import unicodedata
 
 # I/O paths
 input_conapo_poblaciones = "./requirements/poblaciones_group_quinq.csv"
@@ -23,6 +34,11 @@ workers = 24
 output_path = f'/data/onca_products/{cie10}_outputs'
 if not os.path.exists(output_path):
     os.mkdir(output_path)
+
+def read_data_bytes(file_path):
+    with open(file_path, "rb") as file:
+        data_bytes = file.read()
+    return data_bytes
 
 # Lectura de catalogos y datos crudos
 print("Cargando catalogos")
@@ -52,6 +68,58 @@ age_groups = np.array(['00_04', '05_09', '10_14', '15_19', '20_24', '25_29', '30
 arr_l = age_groups.shape[0]
 
 init_time = time.time()
+
+#Definiendo las configuraciones de MictlanX
+print("Definiendo las configuraciones de MictlanX")
+oca_client = OCAClient(
+    hostname=os.environ.get("OCA_API_HOSTNAME","apix.tamps.cinvestav.mx/onca/api/v1"),
+    port= int(os.environ.get("OCA_API_PORT","-1")),
+)
+
+L = Log(
+    name     = "upload_metadata",
+    path     = "logs/",
+    console_handler_filter=lambda record: True
+)
+
+MICTLANX_BUCKET_ID = "c910_test4"
+
+NODE_ID = os.environ.get("NODE_ID","risk-calculator-observatory-0")
+BUCKET_ID       = os.environ.get("MICTLANX_BUCKET_ID",MICTLANX_BUCKET_ID) #pruebas
+catalog_ids = os.environ.get("OBSERVATORY_CATALOGS","").split(';')
+routers_str = os.environ.get("MICTLANX_ROUTERS","mictlanx-router-0:apix.tamps.cinvestav.mx/mictlanx:-1") #
+
+OBSERVATORY_ID     = os.environ.get("OBSERVATORY_ID",MICTLANX_BUCKET_ID)
+MICTLANX_URL       = os.environ.get("MICTLANX_URL","https://apix.tamps.cinvestav.mx/mictlanx/api/v4/buckets")
+
+
+MICTLANX_PROTOCOL  = os.environ.get("MICTLANX_PROTOCOL","https")
+OUTPUT_PATH:str    = os.environ.get("OUTPUT_PATH","outs_csv/")
+L.debug({
+    "event":"RETC_IARC_STARTED",
+    "bucket_id":BUCKET_ID,
+    "catalog_ids":catalog_ids,
+    "routers_str":routers_str
+})
+
+print("Iniciando el cliente de MictlanX")
+routers     = list(Utils.routers_from_str(routers_str,protocol=MICTLANX_PROTOCOL))
+c = Client(
+    # Unique identifier of the client
+    client_id   = os.environ.get("MICTLANX_CLIENT_ID","risk-calculator-0"),
+    # Storage peers
+    routers     = routers,
+    # Number of threads to perform I/O operations
+    max_workers = int(os.environ.get("MICTLANX_MAX_WORKERS","2")),
+    # This parameters are optionals only set to True if you want to see some basic metrics ( this options increase little bit the overhead please take into account).
+    debug       = True,
+    log_output_path= os.environ.get("MICTLANX_LOG_OUTPUT_PATH","logs/"),
+    bucket_id=BUCKET_ID
+)
+
+products = []
+products_rows = []    
+futures:List[Awaitable[Result[PutResponse,Exception]]] = []
 
 #----------------LINEPLOTS----------------#
 print("Generando lineplots")
