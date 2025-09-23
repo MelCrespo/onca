@@ -1,5 +1,7 @@
 import pandas as pd
 import os
+import unicodedata
+from client import Product,Level
 
 class MortalityStandardizer:
     def __init__(self, file_path:str, std_name:str, age_groups:list) -> None:
@@ -99,4 +101,245 @@ class DeathRegistryLoader:
             .drop(columns=['EDAD', 'CVE', 'DESCRIP']) \
             .rename(columns={'ENT_OCURR':'ENT_CVE', 'MUN_OCURR':'MUN_CVE'}) # Agregamos de columna de RANGO_EDAD
         return deaths
+
+def read_data_bytes(file_path):
+    with open(file_path, "rb") as file:
+        data_bytes = file.read()
+    return data_bytes
+
+def prepare_indexing(product_type, cie10, anio, ent_cve, mun_cve, sex_id, rate_type, response: dict, futures, products, MICTLANX_URL, BUCKET_ID, OBSERVATORY_ID, mictlanx_client):
+    name_metadata = f"{response["fname"]}.csv"
+    name_producct = f"{response["fname"]}.html"
+
+    line = {
+        "mcrespo_tipos_productos": product_type,
+        "mcrespo_cie10": cie10,
+        "mcrespo_temporal": anio,
+        "mcrespo_estados": ent_cve,
+        "mcrespo_municipios": mun_cve,
+        "mcrespo_sexo": str(sex_id),
+        "mcrespo_rango_edad": response["rango_edad"],
+        "mcrespo_tipo_tasa": rate_type,
+        "name_metadata": name_metadata,
+        "name_producct": name_producct,
+        "description": response["description"]
+    }
+
+    print("Cargando productos")
+    print("\tMetadata")
+    url_data = ""
+    file_id = "{}_{}_{}_{}_{}_{}_{}".format(
+        line["mcrespo_tipos_productos"], 
+        line["mcrespo_cie10"],
+        line["mcrespo_temporal"], 
+        line["mcrespo_estados"], 
+        line["mcrespo_sexo"], 
+        line["mcrespo_rango_edad"], 
+        line["mcrespo_tipo_tasa"])
+    
+    print(f"\t{file_id}")
+    
+    csv_data = read_data_bytes(line["name_metadata"])
+    product_data = read_data_bytes(line["name_producct"])
+    
+    profile = "{}_{}_{}_{}_{}_{}_{}".format(
+        line["mcrespo_tipos_productos"], 
+        line["mcrespo_cie10"],
+        line["mcrespo_temporal"], 
+        line["mcrespo_estados"], 
+        line["mcrespo_sexo"], 
+        line["mcrespo_rango_edad"], 
+        line["mcrespo_tipo_tasa"])    
+
+    description      = line["description"]
+    level_path       = "PRODUCTO.CIE10.PERIODO.CVE_ENT.SEXO.RANGOEDAD.TASA"
+    product_name     = file_id
+    # product_type     = "Lineplot"
+    # state_key        = str(line["mcrespo_estados"]).zfill(2)
+    # state            = line["mcrespo_estados"]
+    #url              = "{}/{}/dp_{}".format(MICTLANX_URL,BUCKET_ID,file_id)
+    normalized       = unicodedata.normalize("NFD",file_id)
+    file_id              = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    file_id = file_id.replace(" ","").replace(".","").replace("-","_").replace("@","")
+    file_id = file_id.lower()
+    url              = "{}/{}/product_{}".format(MICTLANX_URL,BUCKET_ID,file_id)
+    url_data              = "{}/{}/csv_{}?content_type=text/csv".format(MICTLANX_URL,BUCKET_ID,file_id)
+    
+    print("\t"+url)
+    print("\t"+url_data)
+
+
+
+
+    product_metadata = Product(
+        pid        ="csv_{}".format(file_id),
+        description= f"Metadata del producto: {description}",
+        level_path=level_path,
+        product_name=product_name,
+        product_type="csv",
+        tags=[OBSERVATORY_ID],
+        profile=profile,
+        url=url_data,
+        data_url="",
+        levels=[
+            Level(
+                index=0,
+                cid ="mcrespo_tipos_productos", 
+                value=str("csv"),
+                kind="INTEREST"
+            ), 
+            
+            Level(
+                index=1,
+                cid ="mcrespo_cie10",
+                value=line["mcrespo_cie10"],
+                kind="INTEREST",
+            ),
+            Level(
+                index=2,
+                cid ="mcrespo_temporal",
+                value=str(line["mcrespo_temporal"]),
+                kind="TEMPORAL",
+            ),            
+            Level(
+                index=3,
+                cid ="mcrespo_estados",
+                value=str(line["mcrespo_estados"]),
+                kind="SPATIAL",
+            ),            
+            Level(
+                index=4,
+                cid ="mcrespo_sexo",
+                value=line["mcrespo_sexo"],
+                kind="INTEREST",
+            ),            
+            Level(
+                index=5,
+                cid ="mcrespo_rango_edad",
+                value=line["mcrespo_rango_edad"],
+                kind="INTEREST",
+            ),            
+            Level(
+                index=6,
+                cid ="mcrespo_tipo_tasa",
+                value=line["mcrespo_tipo_tasa"],
+                kind="INTEREST",
+            )
+        ]   
+    )
+    products.append(product_metadata)
+
+    my_type = "text/csv"
+
+
+    future = mictlanx_client.put_async(
+        #   Comment this line out to save using the checksum as key
+        key   = "csv_{}".format(file_id),
+        value = csv_data,
         
+
+        #   MictlanX - metadata
+        tags = {
+            "iarc":"NA",
+            "anio":line["mcrespo_temporal"],
+            "estado": line["mcrespo_estados"],
+            "cve_ent": line["mcrespo_estados"],
+            "cve_mun": line["mcrespo_municipios"],
+            "product_type":product_type,
+            "product_name":product_name,
+            "profile":profile,
+            "content_type":my_type
+        },
+
+        bucket_id=BUCKET_ID,
+        replication_factor=2
+    )
+    
+    futures.append(future)
+
+    product_html = Product(
+        pid        ="product_{}".format(file_id),
+        description= f"{description}",
+        level_path=level_path,
+        product_name=product_name,
+        product_type=product_type,
+        tags=[OBSERVATORY_ID],
+        profile=profile,
+        url=url,
+        data_url=url_data,
+        levels=[
+            Level(
+                index=0,
+                cid ="mcrespo_tipos_productos", 
+                value=str(line["mcrespo_tipos_productos"]),
+                kind="INTEREST"
+            ), 
+            
+            Level(
+                index=1,
+                cid ="mcrespo_cie10",
+                value=line["mcrespo_cie10"],
+                kind="INTEREST",
+            ),
+            Level(
+                index=2,
+                cid ="mcrespo_temporal",
+                value=str(line["mcrespo_temporal"]),
+                kind="TEMPORAL",
+            ),            
+            Level(
+                index=3,
+                cid ="mcrespo_estados",
+                value=str(line["mcrespo_estados"]),
+                kind="SPATIAL",
+            ),            
+            Level(
+                index=4,
+                cid ="mcrespo_sexo",
+                value=line["mcrespo_sexo"],
+                kind="INTEREST",
+            ),            
+            Level(
+                index=5,
+                cid ="mcrespo_rango_edad",
+                value=line["mcrespo_rango_edad"],
+                kind="INTEREST",
+            ),            
+            Level(
+                index=6,
+                cid ="mcrespo_tipo_tasa",
+                value=line["mcrespo_tipo_tasa"],
+                kind="INTEREST",
+            )
+    ]
+    )
+    my_type = "html"
+    products.append(product_html)
+
+    future = mictlanx_client.put_async(
+        #   Comment this line out to save using the checksum as key
+        key   = "product_{}".format(file_id),
+        value = product_data,
+        
+
+        #   MictlanX - metadata
+        tags = {
+            "iarc":"NA",
+            "anio":line["mcrespo_temporal"],
+            "estado": line["mcrespo_estados"],
+            "cve_ent": line["mcrespo_estados"],
+            "cve_mun": line["mcrespo_municipios"],
+            "product_type":product_type,
+            "product_name":product_name,
+            "profile":profile,
+            "content_type":my_type
+        },
+
+        bucket_id=BUCKET_ID,
+        replication_factor=1
+    )
+    
+    futures.append(future)
+    print(url)
+    print(url_data)
+    print("\tLineplot") 

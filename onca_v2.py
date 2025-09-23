@@ -4,7 +4,6 @@ import os
 import onca_products as op
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures as ft
 import time
 import janitor
 import sys
@@ -16,9 +15,9 @@ from mictlanx.v4.interfaces.responses import PutResponse
 from concurrent.futures import as_completed
 from option import Result,Ok,Err
 from typing import List,Dict,Any,Awaitable
-from client import OCAClient,Product,Level
+from client import OCAClient
 from nanoid import generate as nanoid
-import unicodedata
+
 
 # I/O paths
 input_conapo_poblaciones = "./requirements/poblaciones_group_quinq.csv"
@@ -34,11 +33,6 @@ workers = 24
 output_path = f'/data/onca_products/{cie10}_outputs'
 if not os.path.exists(output_path):
     os.mkdir(output_path)
-
-def read_data_bytes(file_path):
-    with open(file_path, "rb") as file:
-        data_bytes = file.read()
-    return data_bytes
 
 # Lectura de catalogos y datos crudos
 print("Cargando catalogos")
@@ -117,12 +111,13 @@ c = Client(
     bucket_id=BUCKET_ID
 )
 
-products = []
-products_rows = []    
-futures:List[Awaitable[Result[PutResponse,Exception]]] = []
 
 #----------------LINEPLOTS----------------#
 print("Generando lineplots")
+
+products = []
+futures:List[Awaitable[Result[PutResponse,Exception]]] = []
+
 if not os.path.exists(output_path + '/lineplots'):
     os.mkdir(output_path + '/lineplots')
 counter = 1
@@ -140,7 +135,7 @@ for l in np.arange(arr_l) + 1:
                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'SEXO', 'RANGO_EDAD'])
                 df = df[df.SEXO == sex_id].drop(columns=["SEXO"])
 
-            pg.create_lineplot(
+            response = pg.create_lineplot(
                 data=df,
                 x='ANIO_REGIS',
                 y=tasa,
@@ -153,8 +148,29 @@ for l in np.arange(arr_l) + 1:
                 cve_geo='00',
                 sex=sex,
             )
+            
+            ou.prepare_indexing("Lineplot",
+                                cie10,
+                                "2000-2023",
+                                "00",
+                                "000",
+                                sex_id,
+                                tasa,
+                                response,
+                                futures,
+                                products,
+                                MICTLANX_URL,
+                                BUCKET_ID,
+                                OBSERVATORY_ID,
+                                c)
+
             print(f"Lineplot {counter}", end="\r")
             counter+=1
+
+prod_res    = oca_client.create_products(
+        products = products
+    )
+print(prod_res)
 
 #----------------HEATMAPS----------------#
 print("Generando mapas de calor")
