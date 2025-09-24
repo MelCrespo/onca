@@ -5,3 +5,6 @@ __pycache__
 .gitignore
 onca_v2_paper.ipynb
 paper*
+log
+logs
+outs_csv

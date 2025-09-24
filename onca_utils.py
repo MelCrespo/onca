@@ -114,7 +114,7 @@ def prepare_indexing(product_type, cie10, anio, ent_cve, mun_cve, sex_id, rate_t
     line = {
         "mcrespo_tipos_productos": product_type,
         "mcrespo_cie10": cie10,
-        "mcrespo_temporal": anio,
+        "mcrespo_temporal": str(anio),
         "mcrespo_estados": ent_cve,
         "mcrespo_municipios": mun_cve,
         "mcrespo_sexo": str(sex_id),
@@ -342,4 +342,4 @@ def prepare_indexing(product_type, cie10, anio, ent_cve, mun_cve, sex_id, rate_t
     futures.append(future)
     print(url)
     print(url_data)
-    print("\tLineplot") 
+    # print("\tLineplot") 

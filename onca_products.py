@@ -6,7 +6,7 @@ import janitor
 
 class ProductGenerator:
     def create_lineplot(self, data: pd.DataFrame, x: str, y: str, color: str, output_path: str,
-                        cie10: str, place: str, scale: str, hover_data: list, cve_geo: str, sex: str) -> None:
+                        cie10: str, place: str, scale: str, hover_data: list, cve_geo: str, sex: str) -> dict:
 
         fig_title = f"{place} age-specific rate per {scale} inhabitants, {sex}"
         fig = px.line(data.sort_values([color,x]),
@@ -57,6 +57,10 @@ class ProductGenerator:
         #                 title=fig_title,
         #                 x_axis=x,
         #                 y_axis=y)
+
+        return {"fname": f"{output_path}/{file_name}",
+                "rango_edad": f"{min_age}-{max_age}",
+                "description": fig_title}
         
     def create_state_map(self, data: pd.DataFrame, geojson_file_path: str, x: str, y: str, output_path: str,
                         cie10: str, place: str, rate: str, scale: str, hover_data: list, labels: dict,
@@ -176,6 +180,10 @@ class ProductGenerator:
         #                 x_axis=x,
         #                 y_axis=y,
         #                 z_axis=z)
+
+        return {"fname": f"{output_path}/{file_name}",
+                "rango_edad": ages,
+                "description": fig_title}
         
     def create_boxplot(self, data: pd.DataFrame, x: str, y: str, color: str, hover_data: list, output_path: str,
                         cie10: str, place: str, rate: str, scale: str, labels: dict,
@@ -215,6 +223,10 @@ class ProductGenerator:
         #                 title=fig_title,
         #                 x_axis=x,
         #                 y_axis=y)
+
+        return {"fname": f"{output_path}/{file_name}",
+                "rango_edad": ages,
+                "description": fig_title}
 
     def __write_metadata(self,
                         name='Default',
