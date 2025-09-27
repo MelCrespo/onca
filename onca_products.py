@@ -99,7 +99,11 @@ class ProductGenerator:
         #                 title=fig_title,
         #                 x_axis=x,
         #                 y_axis=y)
-        
+        del(fig)
+        return {"fname": f"{output_path}/{file_name}",
+                "rango_edad": ages,
+                "description": fig_title}
+
     def create_municipality_map(self, data: pd.DataFrame, geojson_file_path: str, x: str, y: str, output_path: str,
                         cie10: str, place: str, rate: str, scale: str, hover_data: list, labels: dict,
                         cve_geo: str, sex: str, ages: str, year: str) -> None:
