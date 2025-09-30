@@ -119,230 +119,233 @@ c = Client(
 )
 
 
-# #----------------LINEPLOTS----------------#
-# print("Generando lineplots")
+#----------------LINEPLOTS----------------#
+print("Generando lineplots")
 
-# products = []
-# futures:List[Awaitable[Result[PutResponse,Exception]]] = []
+products = []
+futures:List[Awaitable[Result[PutResponse,Exception]]] = []
 
-# if not os.path.exists(output_path + '/lineplots'):
-#     os.mkdir(output_path + '/lineplots')
-# counter = 1
-# for l in np.arange(arr_l) + 1:   
-#     for i in np.arange(arr_l-l+1):
-#         filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups[i:i+l])].copy()
+if not os.path.exists(output_path + '/lineplots'):
+    os.mkdir(output_path + '/lineplots')
+counter = 1
+for l in np.arange(arr_l) + 1:   
+    for i in np.arange(arr_l-l+1):
+        filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups[i:i+l])].copy()
 
-#         for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
-#             # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
-#             tasa = "TASA_CRUDA_100K"
-#             escala = "100,000"
-#             if sex_id == 3:
-#                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
-#             else:
-#                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'SEXO', 'RANGO_EDAD'])
-#                 df = df[df.SEXO == sex_id].drop(columns=["SEXO"])
+        for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
+            # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
+            tasa = "TASA_CRUDA_100K"
+            escala = "100,000"
+            if sex_id == 3:
+                df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'RANGO_EDAD'])
+            else:
+                df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'SEXO', 'RANGO_EDAD'])
+                df = df[df.SEXO == sex_id].drop(columns=["SEXO"])
 
-#             response = pg.create_lineplot(
-#                 data=df,
-#                 x='ANIO_REGIS',
-#                 y=tasa,
-#                 color='RANGO_EDAD',
-#                 output_path=output_path + '/lineplots',
-#                 cie10=cie10,
-#                 place='Mexico',
-#                 scale=escala,
-#                 hover_data= [tasa],
-#                 cve_geo='00',
-#                 sex=sex,
-#             )
+            response = pg.create_lineplot(
+                data=df,
+                x='ANIO_REGIS',
+                y=tasa,
+                color='RANGO_EDAD',
+                output_path=output_path + '/lineplots',
+                cie10=cie10,
+                place='Mexico',
+                scale=escala,
+                hover_data= [tasa],
+                cve_geo='00',
+                sex=sex,
+            )
             
-#             ou.prepare_indexing("Lineplot",
-#                                 cie10,
-#                                 "2000-2023",
-#                                 "00",
-#                                 "000",
-#                                 sex_id,
-#                                 tasa,
-#                                 response,
-#                                 futures,
-#                                 products,
-#                                 MICTLANX_URL,
-#                                 BUCKET_ID,
-#                                 OBSERVATORY_ID,
-#                                 c)
+            ou.prepare_indexing("Lineplot",
+                                cie10,
+                                "2000-2023",
+                                "00",
+                                "000",
+                                sex_id,
+                                tasa,
+                                response,
+                                futures,
+                                products,
+                                MICTLANX_URL,
+                                BUCKET_ID,
+                                OBSERVATORY_ID,
+                                c)
 
-#             print(f"Lineplot {counter}")#, end="\r")
-#             counter+=1
+            print(f"Lineplot {counter}")#, end="\r")
+            counter+=1
 
-# wait(futures)
+wait(futures)
 
-# prod_res    = oca_client.create_products(
-#         products = products
-#     )
-# print(prod_res)
+prod_res    = oca_client.create_products(
+        products = products
+    )
+print(prod_res)
+del(products, futures)
 
-# #----------------HEATMAPS----------------#
-# print("Generando mapas de calor")
+#----------------HEATMAPS----------------#
+print("Generando mapas de calor")
 
-# products = []
-# futures:List[Awaitable[Result[PutResponse,Exception]]] = []
+products = []
+futures:List[Awaitable[Result[PutResponse,Exception]]] = []
 
-# if not os.path.exists(output_path + '/heatmaps'):
-#     os.mkdir(output_path + '/heatmaps')
-# counter = 0
-# for l in np.arange(arr_l) + 1:   
-#     for i in np.arange(arr_l-l+1):
-#         age_groups_range = age_groups[i:i+l]
-#         filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups_range)].copy()
-#         ages = f"{age_groups_range[0].split('_')[0]}-{age_groups_range[-1].split('_')[-1]}"
+if not os.path.exists(output_path + '/heatmaps'):
+    os.mkdir(output_path + '/heatmaps')
+counter = 0
+for l in np.arange(arr_l) + 1:   
+    for i in np.arange(arr_l-l+1):
+        age_groups_range = age_groups[i:i+l]
+        filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups_range)].copy()
+        ages = f"{age_groups_range[0].split('_')[0]}-{age_groups_range[-1].split('_')[-1]}"
 
-#         for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
-#             # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
-#             tasa = "TASA_CRUDA_100K"
-#             escala = "100,000"
-#             if sex_id == 3:
-#                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'RANGO_EDAD'])
-#             else:
-#                 df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD'])
-#                 df = df[df.SEXO == sex_id].drop(columns=["SEXO"])
+        for sex_id, sex in zip([1,2,3], ["Men","Women","Both sexes"]):
+            # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
+            tasa = "TASA_CRUDA_100K"
+            escala = "100,000"
+            if sex_id == 3:
+                df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'RANGO_EDAD'])
+            else:
+                df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD'])
+                df = df[df.SEXO == sex_id].drop(columns=["SEXO"])
 
-#             df = df.merge(cat_entidades, on="ENT_CVE")
-#             df = df.astype({'ENT_CVE':str})
-#             df['ENT_CVE'] = df.ENT_CVE.str.zfill(2)
+            df = df.merge(cat_entidades, on="ENT_CVE")
+            df = df.astype({'ENT_CVE':str})
+            df['ENT_CVE'] = df.ENT_CVE.str.zfill(2)
 
 
-#             with ThreadPoolExecutor(max_workers=workers) as executor:
-#                 fts = list()
-#                 years = list()
-#                 for year in df.ANIO_REGIS.unique():
-#                     years.append(year)
-#                     df_year = df[df.ANIO_REGIS == year].copy()
-#                     df_cancer_c = df_year.complete("ENT_NOMBRE","RANGO_EDAD").fillna(0)
-#                     df_cancer_c = df_cancer_c.sort_values(by=[tasa], ascending=False)
-#                     counter+=1
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                fts = list()
+                years = list()
+                for year in df.ANIO_REGIS.unique():
+                    years.append(year)
+                    df_year = df[df.ANIO_REGIS == year].copy()
+                    df_cancer_c = df_year.complete("ENT_NOMBRE","RANGO_EDAD").fillna(0)
+                    df_cancer_c = df_cancer_c.sort_values(by=[tasa], ascending=False)
+                    counter+=1
                     
-#                     fts.append(executor.submit(pg.create_age_specific_heatmap,
-#                     data=df_cancer_c,
-#                     x="ENT_NOMBRE",
-#                     y="RANGO_EDAD",
-#                     z=tasa,
-#                     output_path=output_path + '/heatmaps',
-#                     cie10=cie10,
-#                     place='Mexico',
-#                     rate="Age-specific MR",
-#                     scale=escala,
-#                     labels={"ENT_NOMBRE":"State", "RANGO_EDAD":"Age", tasa:"Age-specific rate"},
-#                     cve_geo='00',
-#                     sex=sex,
-#                     ages=ages,
-#                     year=year))
+                    fts.append(executor.submit(pg.create_age_specific_heatmap,
+                    data=df_cancer_c,
+                    x="ENT_NOMBRE",
+                    y="RANGO_EDAD",
+                    z=tasa,
+                    output_path=output_path + '/heatmaps',
+                    cie10=cie10,
+                    place='Mexico',
+                    rate="Age-specific MR",
+                    scale=escala,
+                    labels={"ENT_NOMBRE":"State", "RANGO_EDAD":"Age", tasa:"Age-specific rate"},
+                    cve_geo='00',
+                    sex=sex,
+                    ages=ages,
+                    year=year))
                     
-#                     print(f"Heatmap {counter}")#, end="\r")
+                    print(f"Heatmap {counter}")#, end="\r")
 
-#                 for ft, year in zip(fts, years):
-#                     response = ft.result()
+                for ft, year in zip(fts, years):
+                    response = ft.result()
 
-#                     ou.prepare_indexing("Heatmap",
-#                                         cie10,
-#                                         year,
-#                                         "00",
-#                                         "000",
-#                                         sex_id,
-#                                         tasa,
-#                                         response,
-#                                         futures,
-#                                         products,
-#                                         MICTLANX_URL,
-#                                         BUCKET_ID,
-#                                         OBSERVATORY_ID,
-#                                         c)
+                    ou.prepare_indexing("Heatmap",
+                                        cie10,
+                                        year,
+                                        "00",
+                                        "000",
+                                        sex_id,
+                                        tasa,
+                                        response,
+                                        futures,
+                                        products,
+                                        MICTLANX_URL,
+                                        BUCKET_ID,
+                                        OBSERVATORY_ID,
+                                        c)
 
-# wait(futures)
+wait(futures)
 
-# prod_res    = oca_client.create_products(
-#         products = products
-#     )
-# print(prod_res)
+prod_res    = oca_client.create_products(
+        products = products
+    )
+print(prod_res)
+del(products, futures)
 
-# #----------------BOXPLOTS----------------#
-# print("Generando boxplots")
+#----------------BOXPLOTS----------------#
+print("Generando boxplots")
 
-# products = []
-# futures:List[Awaitable[Result[PutResponse,Exception]]] = []
+products = []
+futures:List[Awaitable[Result[PutResponse,Exception]]] = []
 
-# if not os.path.exists(output_path + '/boxplots'):
-#     os.mkdir(output_path + '/boxplots')
-# counter = 0
-# for l in np.arange(arr_l) + 1:   
-#     for i in np.arange(arr_l-l+1):
-#         age_groups_range = age_groups[i:i+l]
-#         filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups_range)].copy()
-#         ages = f"{age_groups_range[0].split('_')[0]}-{age_groups_range[-1].split('_')[-1]}"
+if not os.path.exists(output_path + '/boxplots'):
+    os.mkdir(output_path + '/boxplots')
+counter = 0
+for l in np.arange(arr_l) + 1:   
+    for i in np.arange(arr_l-l+1):
+        age_groups_range = age_groups[i:i+l]
+        filtered_deaths = deaths[deaths.RANGO_EDAD.isin(age_groups_range)].copy()
+        ages = f"{age_groups_range[0].split('_')[0]}-{age_groups_range[-1].split('_')[-1]}"
 
-#         sex = "Both sexes"
-#         # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
-#         tasa = "TASA_CRUDA_100K"
-#         escala = "100,000"
-#         df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD'])
-#         df = df.merge(cat_entidades, on="ENT_CVE")
-#         df = df.astype({'ENT_CVE':str,'SEXO':str})
-#         df.loc[df.SEXO=="1","SEXO"] = "Men"
-#         df.loc[df.SEXO=="2","SEXO"] = "Women"
-#         df['ENT_CVE'] = df.ENT_CVE.str.zfill(2)
+        sex = "Both sexes"
+        # for tasa, escala in zip(["TASA_CRUDA_1K","TASA_CRUDA_10K","TASA_CRUDA_100K"], ["1000","10,000","100,000"]):
+        tasa = "TASA_CRUDA_100K"
+        escala = "100,000"
+        df = mc.compute_raw_mortality_rate(filtered_deaths, conapo_populations, ['ANIO_REGIS', 'ENT_CVE', 'SEXO', 'RANGO_EDAD'])
+        df = df.merge(cat_entidades, on="ENT_CVE")
+        df = df.astype({'ENT_CVE':str,'SEXO':str})
+        df.loc[df.SEXO=="1","SEXO"] = "Men"
+        df.loc[df.SEXO=="2","SEXO"] = "Women"
+        df['ENT_CVE'] = df.ENT_CVE.str.zfill(2)
 
 
-#         with ThreadPoolExecutor(max_workers=workers) as executor:
-#             fts = list()
-#             years = list()
-#             for year in df.ANIO_REGIS.unique():
-#                 years.append(year)
-#                 df_year = df[df.ANIO_REGIS == year].copy()
-#                 df_year = df_year.sort_values(['RANGO_EDAD','SEXO'])
-#                 counter+=1
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            fts = list()
+            years = list()
+            for year in df.ANIO_REGIS.unique():
+                years.append(year)
+                df_year = df[df.ANIO_REGIS == year].copy()
+                df_year = df_year.sort_values(['RANGO_EDAD','SEXO'])
+                counter+=1
                 
-#                 fts.append(executor.submit(pg.create_boxplot,
-#                 data=df_year,
-#                 x='RANGO_EDAD',
-#                 y=tasa,
-#                 color='SEXO',
-#                 hover_data=['ENT_NOMBRE',tasa,'SEXO','RANGO_EDAD'],
-#                 output_path=output_path + '/boxplots',
-#                 cie10=cie10,
-#                 place='Mexico',
-#                 rate='Age-specific mortality rate',
-#                 scale=escala,
-#                 labels={'ENT_NOMBRE':'State',tasa:'Age-specific MR','SEXO':'Sex','RANGO_EDAD':'Age'},
-#                 cve_geo='00',
-#                 sex=sex,
-#                 ages=ages,
-#                 year=year))
+                fts.append(executor.submit(pg.create_boxplot,
+                data=df_year,
+                x='RANGO_EDAD',
+                y=tasa,
+                color='SEXO',
+                hover_data=['ENT_NOMBRE',tasa,'SEXO','RANGO_EDAD'],
+                output_path=output_path + '/boxplots',
+                cie10=cie10,
+                place='Mexico',
+                rate='Age-specific mortality rate',
+                scale=escala,
+                labels={'ENT_NOMBRE':'State',tasa:'Age-specific MR','SEXO':'Sex','RANGO_EDAD':'Age'},
+                cve_geo='00',
+                sex=sex,
+                ages=ages,
+                year=year))
                 
-#                 print(f"Boxplot {counter}")#, end="\r")
+                print(f"Boxplot {counter}")#, end="\r")
 
-#             for ft, year in zip(fts, years):
-#                 response = ft.result()
+            for ft, year in zip(fts, years):
+                response = ft.result()
 
-#                 ou.prepare_indexing("Boxplot",
-#                                     cie10,
-#                                     year,
-#                                     "00",
-#                                     "000",
-#                                     3,
-#                                     tasa,
-#                                     response,
-#                                     futures,
-#                                     products,
-#                                     MICTLANX_URL,
-#                                     BUCKET_ID,
-#                                     OBSERVATORY_ID,
-#                                     c)
+                ou.prepare_indexing("Boxplot",
+                                    cie10,
+                                    year,
+                                    "00",
+                                    "000",
+                                    3,
+                                    tasa,
+                                    response,
+                                    futures,
+                                    products,
+                                    MICTLANX_URL,
+                                    BUCKET_ID,
+                                    OBSERVATORY_ID,
+                                    c)
 
-# wait(futures)
+wait(futures)
 
-# prod_res    = oca_client.create_products(
-#         products = products
-#     )
-# print(prod_res)
+prod_res    = oca_client.create_products(
+        products = products
+    )
+print(prod_res)
+del(products, futures)
 
 #-----------MAPAS ESTATALES---------------#
 print("\nGenerando mapas estatales")
