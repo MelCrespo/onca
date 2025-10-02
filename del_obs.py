@@ -36,7 +36,7 @@ L = Log(
 )
 
 
-MICTLANX_BUCKET_ID = "c910_test7"
+MICTLANX_BUCKET_ID = "c910_test12"
 
 
 NODE_ID = os.environ.get("NODE_ID","risk-calculator-observatory-0")

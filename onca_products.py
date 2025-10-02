@@ -6,25 +6,33 @@ import janitor
 
 class ProductGenerator:
     def create_lineplot(self, data: pd.DataFrame, x: str, y: str, color: str, output_path: str,
-                        cie10: str, place: str, scale: str, hover_data: list, cve_geo: str, sex: str) -> dict:
+                        cie10: str, place: str, scale: str, hover_data: list, labels:dict, cve_geo: str, sex: str, ages: str) -> dict:
+        
+        min_year = data[x].min()
+        max_year = data[x].max()
 
-        fig_title = f"{place} age-specific rate per {scale} inhabitants, {sex}"
+        # fig_title = f"{place} age-specific rate per {scale} inhabitants, {sex}"
+        fig_title = f"{place}, tasa de mortalidad específica por edad por cada {scale} habitantes, {sex.lower()}, edades[{ages}], en {min_year}-{max_year}"
         fig = px.line(data.sort_values([color,x]),
                         x=x,
                         y=y,
                         color=color,
                         hover_name=color,
                         hover_data=hover_data,
+                        labels=labels,
                         width=1080,
                         height=720,
                         markers=True)
         
         years = data.sort_values(x)[x].unique()
         fig.update_layout(
-            xaxis_title="Year",
-            yaxis_title=f"Mortality rate per {scale} inhabitants",
+            # xaxis_title="Year",
+            # yaxis_title=f"Mortality rate per {scale} inhabitants",
+            xaxis_title="Año",
+            yaxis_title=f"Tasa de mortalidad específica por edad por cada {scale} habitantes",
             title_text=fig_title,
-            legend_title="Age group",
+            # legend_title="Age group",
+            legend_title="Grupo de edad",
             xaxis = dict(
                 tickmode = 'array',
                 tickvals = years,
@@ -33,12 +41,11 @@ class ProductGenerator:
             )
         )
 
-        min_year = data[x].min()
-        max_year = data[x].max()
-        age_groups = data.sort_values(color)[color].unique()
-        min_age = age_groups[0].split("_")[0]
-        max_age = age_groups[-1].split("_")[-1]
-        file_name = f"lineplot_{cie10}_" + f"[{min_year}-{max_year}]_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{min_age}-{max_age}]_" + y.lower().replace('_', '')
+        # age_groups = data.sort_values(color)[color].unique()
+        # min_age = age_groups[0].split("_")[0]
+        # max_age = age_groups[-1].split("_")[-1]
+        # file_name = f"lineplot_{cie10}_" + f"[{min_year}-{max_year}]_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{min_age}-{max_age}]_" + y.lower().replace('_', '')
+        file_name = f"lineplot_{cie10}_" + f"[{min_year}-{max_year}]_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + y.lower().replace('_', '')
         fig.write_html(output_path + "/" + file_name + ".html")
         data[[x,color,y]].to_csv(output_path + "/" + file_name + ".csv", index=False)
         
@@ -58,8 +65,9 @@ class ProductGenerator:
         #                 x_axis=x,
         #                 y_axis=y)
 
+                # "rango_edad": f"{min_age}-{max_age}",
         return {"fname": f"{output_path}/{file_name}",
-                "rango_edad": f"{min_age}-{max_age}",
+                "rango_edad": ages,
                 "description": fig_title}
         
     def create_state_map(self, data: pd.DataFrame, geojson_file_path: str, x: str, y: str, output_path: str,
@@ -147,7 +155,8 @@ class ProductGenerator:
                         cie10: str, place: str, rate: str, scale: str, labels: dict,
                         cve_geo: str, sex: str, ages: str, year: str) -> None:
 
-        fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        # fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        fig_title = f"{place}, tasa de mortalidad específica por edad por cada {scale} habitantes, {sex.lower()}, edades[{ages}], en {year}"
 
         fig = px.density_heatmap(data.round(2), 
                                 x=x, 
@@ -161,8 +170,10 @@ class ProductGenerator:
                                 )
         fig.update_layout(
             title=fig_title,
-            yaxis_title="Age",
-            xaxis_title="State",
+            # yaxis_title="Age",
+            # xaxis_title="State",
+            yaxis_title="Grupo de edad",
+            xaxis_title="Estado",
             coloraxis_colorbar_title_text = rate
         )
         fig.update_yaxes(autorange="reversed")
