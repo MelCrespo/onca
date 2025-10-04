@@ -74,7 +74,8 @@ class ProductGenerator:
                         cie10: str, place: str, rate: str, scale: str, hover_data: list, labels: dict,
                         cve_geo: str, sex: str, ages: str, year: str) -> None:
 
-        fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        # fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        fig_title = f"{place}, {rate} por cada {scale} habitantes, {sex.lower()}, edades[{ages}], en {year}"
         
         geo = json.load(open(geojson_file_path,"r"))
 
@@ -89,8 +90,9 @@ class ProductGenerator:
                                 center={"lat":22.3969, "lon": -101.2833},
                                 opacity=0.5,
                                 title=fig_title)
-        
-        file_name = f"states_map_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + y.lower().replace('_', '')
+
+        file_name = f"states_map_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" \
+            + y.lower().replace('_', '').replace('(','').replace(')','')
         fig.write_html(output_path + "/" + file_name + ".html")
         data[hover_data].to_csv(output_path + "/" + file_name + ".csv", index=False)
         # self.__write_metadata(
@@ -120,7 +122,7 @@ class ProductGenerator:
         
         geo = json.load(open(geojson_file_path,"r"))
 
-        fig = px.choropleth_mapbox(data, geojson=geo, locations=x, 
+        fig = px.choropleth_map(data, geojson=geo, locations=x, 
                                 featureidkey="properties.CVEGEO",
                                 color=y,
                                 hover_data=hover_data,
@@ -204,7 +206,8 @@ class ProductGenerator:
                         cie10: str, place: str, rate: str, scale: str, labels: dict,
                         cve_geo: str, sex: str, ages: str, year: str) -> None:
 
-        fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        # fig_title = f"{rate} per {scale} inhabitants, {place}, {sex}, age[{ages}], in {year}"
+        fig_title = f"{place}, {rate} por cada {scale} habitantes, {sex.lower()}, edades[{ages}], en {year}"
 
         fig = px.box(data,
              x=x,
@@ -217,8 +220,10 @@ class ProductGenerator:
         fig.update_traces(quartilemethod='exclusive')
         fig.update_layout(
             title=fig_title,
-            yaxis_title=f"{rate} per {scale} inhabitants",
-            xaxis_title="Age"
+            # yaxis_title=f"{rate} per {scale} inhabitants",
+            yaxis_title=f"{rate} por cada {scale} habitantes",
+            # xaxis_title="Age"
+            xaxis_title="Grupo de edad"
         )
         
         file_name = f"age_specific_boxplot_{cie10}_" + f"{year}_" + f"{cve_geo}_" + sex.replace(" ","") + "_" + f"[{ages}]_" + y.lower().replace('_', '')
